@@ -1,0 +1,4 @@
+Label,N_Faces,N_Runs,Avg_Detection_ms,Avg_Background_ms,Avg_PerFace_ms,Avg_Blending_ms,Avg_Total_ms,FPS,Std_Detection_ms,Std_Background_ms,Std_PerFace_ms,Std_Blending_ms,Std_Total_ms
+N=0 (No Face),0,100,470.71,2810.15,0.00,0.00,3280.85,0.30,241.47,1227.41,0.00,0.00,1430.43
+N=1 (Single Face),1,100,54.02,604.54,1049.73,10.18,1718.47,0.58,56.46,430.94,1104.14,12.29,1469.62
+N=3 (Group Photo),3,100,543.54,3162.97,2346.85,31.04,6084.40,0.16,201.22,1379.32,752.40,9.79,1978.56

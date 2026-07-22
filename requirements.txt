@@ -3,3 +3,9 @@ numpy
 Pillow
 pycryptodome
 onnxruntime-gpu
+facenet-pytorch
+ultralytics
+huggingface_hub
+opencv-python
+requests
+tqdm
