@@ -37,6 +37,14 @@ from typing import Optional
 import numpy as np
 from PIL import Image, ImageFilter, ImageDraw
 
+# Đọc tham số --device trước khi import face_det để set ORT_DEVICE
+_device = "gpu"
+if "--device" in sys.argv:
+    _idx = sys.argv.index("--device")
+    if _idx + 1 < len(sys.argv):
+        _device = sys.argv[_idx + 1].lower()
+os.environ["ORT_DEVICE"] = _device
+
 # ─── Import các module từ project ──────────────────────────────────────
 import face_det
 
@@ -545,6 +553,10 @@ def main():
         help="Tên model ONNX (default: hayao)"
     )
     parser.add_argument(
+        "--device", choices=["cpu", "gpu"], default="gpu",
+        help="Chạy trên CPU hay GPU (default: gpu)"
+    )
+    parser.add_argument(
         "--runs", type=int, default=50,
         help="Số lần chạy benchmark mỗi ảnh (default: 50)"
     )
@@ -581,9 +593,10 @@ def main():
         print(f"❌ ONNX model not found: {onnx_path}")
         sys.exit(1)
 
-    print(f"Loading ONNX model: {onnx_path}")
+    print(f"Loading ONNX model: {onnx_path} on {args.device.upper()}")
+    providers = ['CPUExecutionProvider'] if args.device == 'cpu' else ['CUDAExecutionProvider', 'CPUExecutionProvider']
     ort_session = onnxruntime.InferenceSession(
-        onnx_path, sess_options=ort_sess_options)
+        onnx_path, sess_options=ort_sess_options, providers=providers)
 
     # Quét 3 folder và chạy benchmark
     all_results: list[BenchmarkResult] = []

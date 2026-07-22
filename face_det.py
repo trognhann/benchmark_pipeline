@@ -23,14 +23,16 @@ ort_sess_options.intra_op_num_threads = int(os.environ.get('ort_intra_op_num_thr
 # Cache the decrypted model to disk to skip AES decryption on subsequent runs
 _CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "onnx_model", "face_det_retina.onnx")
 
+device = os.environ.get("ORT_DEVICE", "gpu").lower()
+providers = ['CPUExecutionProvider'] if device == 'cpu' else ['CUDAExecutionProvider', 'CPUExecutionProvider']
 if os.path.exists(_CACHE_PATH):
-    torch_mtcnn = onnxruntime.InferenceSession(_CACHE_PATH, sess_options=ort_sess_options)
+    torch_mtcnn = onnxruntime.InferenceSession(_CACHE_PATH, sess_options=ort_sess_options, providers=providers)
 else:
     _model_bytes = AES_de(assets_bin.faceDet, key=AES_de(assets_bin.Author).decode("utf-8"))
     os.makedirs(os.path.dirname(_CACHE_PATH), exist_ok=True)
     with open(_CACHE_PATH, "wb") as _f:
         _f.write(_model_bytes)
-    torch_mtcnn = onnxruntime.InferenceSession(_CACHE_PATH, sess_options=ort_sess_options)
+    torch_mtcnn = onnxruntime.InferenceSession(_CACHE_PATH, sess_options=ort_sess_options, providers=providers)
     del _model_bytes
 
 cfg = cfg_mnet

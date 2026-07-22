@@ -2,3 +2,4 @@ onnxruntime>=1.14.0
 numpy
 Pillow
 pycryptodome
+onnxruntime-gpu
