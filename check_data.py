@@ -6,11 +6,7 @@ from PIL import Image
 # Thêm path hiện tại để có thể import face_det
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from face_det import FaceDetect
-except ImportError:
-    print("❌ Không tìm thấy module face_det. Hãy chạy script này trong thư mục benchmark_standalone.")
-    sys.exit(1)
+from face_det import detect_face
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
 
@@ -37,11 +33,6 @@ def main():
         sys.exit(1)
 
     print("⏳ Đang tải mô hình nhận diện khuôn mặt (RetinaFace) để kiểm tra chéo...")
-    try:
-        face_det = FaceDetect()
-    except Exception as e:
-        print(f"❌ Lỗi khi tải mô hình nhận diện khuôn mặt: {e}")
-        sys.exit(1)
 
     all_resolutions = set()
     has_error = False
@@ -87,7 +78,7 @@ def main():
                 img_np = np.array(img)
                 # cv2 format is BGR, so if face_det expects BGR, we should convert or test it.
                 # Since face_det works with PIL image converted to numpy array (RGB) typically, we use it directly as done in pipeline.
-                bboxes, _ = face_det.detect_face(img_np)
+                bboxes, _ = detect_face(img_np)
                 detected_faces = len(bboxes) if bboxes is not None else 0
                 
                 if detected_faces != expected_faces:
