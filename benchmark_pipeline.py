@@ -539,8 +539,43 @@ def resolve_onnx_model_path(model_name: str) -> str:
 
 def load_models(args):
     models = {}
-    providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if torch_device == 'cuda' else ['CPUExecutionProvider']
+    avail_providers = onnxruntime.get_available_providers()
     
+    npu_providers_list = [
+        "QNNExecutionProvider",       # Qualcomm Snapdragon NPU
+        "OpenVINOExecutionProvider",  # Intel NPU / VPU
+        "DirectMLExecutionProvider",  # Windows DirectML (NPU/GPU)
+        "CoreMLExecutionProvider",   # Apple Neural Engine
+        "CANNExecutionProvider",     # Huawei Ascend NPU
+        "VitisAIExecutionProvider",  # AMD Ryzen AI NPU
+    ]
+
+    if args.device == 'npu':
+        matched_npu = [p for p in npu_providers_list if p in avail_providers]
+        if matched_npu:
+            providers = [matched_npu[0], 'CPUExecutionProvider']
+            print(f"⚡ Using NPU Acceleration ({matched_npu[0]})")
+        else:
+            providers = ['CPUExecutionProvider']
+            print("⚠️ WARNING: NPU được chọn nhưng chưa tìm thấy NPU Execution Provider nào trong ONNXRuntime!")
+            print(f"   -> Available ONNX Providers: {avail_providers}")
+            print("   -> Gợi ý cài đặt tuỳ chip NPU: onnxruntime-qnn (Qualcomm), onnxruntime-openvino (Intel), hoặc onnxruntime-directml (DirectML)")
+    elif args.device == 'gpu':
+        if 'CUDAExecutionProvider' in avail_providers:
+            providers = ['CUDAExecutionProvider', 'CPUExecutionProvider']
+            print("🚀 Using GPU Acceleration (CUDAExecutionProvider)")
+        elif 'DirectMLExecutionProvider' in avail_providers:
+            providers = ['DirectMLExecutionProvider', 'CPUExecutionProvider']
+            print("🚀 Using GPU Acceleration (DirectMLExecutionProvider)")
+        else:
+            providers = ['CPUExecutionProvider']
+            print("⚠️ WARNING: GPU/CUDA được chọn nhưng ONNXRuntime chưa bật CUDA Execution Provider!")
+            print("   -> Nguyên nhân: Đang cài bản 'onnxruntime' (CPU) thay vì 'onnxruntime-gpu'.")
+            print("   -> Khắc phục: Lệnh Colab: !pip uninstall -y onnxruntime && !pip install onnxruntime-gpu")
+    else:
+        providers = ['CPUExecutionProvider']
+        print("💻 Using CPU Execution Provider")
+
     pipelines = ["ours", "baseline1", "baseline2"] if args.pipeline == "all" else [args.pipeline]
     
     if "ours" in pipelines:
@@ -578,7 +613,7 @@ def main():
     parser = argparse.ArgumentParser(description="Benchmark pipeline stages for evaluation table.")
     parser.add_argument("--test-dir", default=None, help="Thư mục gốc chứa 3 folder con")
     parser.add_argument("--model", default="AnimeGANv3_Shinkai_37", help="Tên model ONNX")
-    parser.add_argument("--device", choices=["cpu", "gpu"], default="gpu", help="Chạy trên CPU hay GPU (default: gpu)")
+    parser.add_argument("--device", choices=["cpu", "gpu", "npu"], default="gpu", help="Chạy trên CPU, GPU hay NPU (default: gpu)")
     parser.add_argument("--pipeline", choices=["ours", "baseline1", "baseline2", "all"], default="all", help="Pipeline cần chạy (default: all)")
     parser.add_argument("--runs", type=int, default=50, help="Số lần chạy (default: 50)")
     parser.add_argument("--warmup", type=int, default=5, help="Số lần warmup (default: 5)")

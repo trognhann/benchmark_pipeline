@@ -24,7 +24,27 @@ ort_sess_options.intra_op_num_threads = int(os.environ.get('ort_intra_op_num_thr
 _CACHE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "onnx_model", "face_det_retina.onnx")
 
 device = os.environ.get("ORT_DEVICE", "gpu").lower()
-providers = ['CPUExecutionProvider'] if device == 'cpu' else ['CUDAExecutionProvider', 'CPUExecutionProvider']
+avail = onnxruntime.get_available_providers()
+
+NPU_PROVIDERS = [
+    "QNNExecutionProvider",       # Qualcomm Snapdragon NPU
+    "OpenVINOExecutionProvider",  # Intel NPU / VPU
+    "DirectMLExecutionProvider",  # Windows DirectML (NPU/GPU)
+    "CoreMLExecutionProvider",   # Apple Neural Engine
+    "CANNExecutionProvider",     # Huawei Ascend NPU
+    "VitisAIExecutionProvider",  # AMD Ryzen AI NPU
+]
+
+if device == "npu":
+    matched_npu = [p for p in NPU_PROVIDERS if p in avail]
+    if matched_npu:
+        providers = [matched_npu[0], "CPUExecutionProvider"]
+    else:
+        providers = ["CPUExecutionProvider"]
+elif device == "gpu" and "CUDAExecutionProvider" in avail:
+    providers = ["CUDAExecutionProvider", "CPUExecutionProvider"]
+else:
+    providers = ["CPUExecutionProvider"]
 if os.path.exists(_CACHE_PATH):
     torch_mtcnn = onnxruntime.InferenceSession(_CACHE_PATH, sess_options=ort_sess_options, providers=providers)
 else:
