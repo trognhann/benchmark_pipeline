@@ -509,6 +509,34 @@ TEST_FOLDERS = [
     ("group_photo",  "N=3 (Group Photo)"),
 ]
 
+def resolve_onnx_model_path(model_name: str) -> str:
+    """Find ONNX model path with exact or fuzzy matching in ONNX_MODEL_DIR."""
+    if os.path.isabs(model_name) and os.path.exists(model_name):
+        return model_name
+
+    target_name = model_name if model_name.endswith(".onnx") else f"{model_name}.onnx"
+    direct_path = os.path.join(ONNX_MODEL_DIR, target_name)
+    if os.path.exists(direct_path):
+        return direct_path
+
+    if os.path.isdir(ONNX_MODEL_DIR):
+        available_files = [f for f in os.listdir(ONNX_MODEL_DIR) if f.endswith(".onnx")]
+        # Case insensitive or substring search
+        lower_target = model_name.lower()
+        for f in available_files:
+            if lower_target in f.lower():
+                print(f"💡 Auto-matched model '{model_name}' -> '{f}'")
+                return os.path.join(ONNX_MODEL_DIR, f)
+        
+        print(f"❌ Cannot find model file '{target_name}' in {ONNX_MODEL_DIR}")
+        print("   Available ONNX models in directory:")
+        for f in available_files:
+            print(f"     - {f}")
+        sys.exit(1)
+    else:
+        print(f"❌ Directory not found: {ONNX_MODEL_DIR}")
+        sys.exit(1)
+
 def load_models(args):
     models = {}
     providers = ['CUDAExecutionProvider', 'CPUExecutionProvider'] if torch_device == 'cuda' else ['CPUExecutionProvider']
@@ -516,11 +544,10 @@ def load_models(args):
     pipelines = ["ours", "baseline1", "baseline2"] if args.pipeline == "all" else [args.pipeline]
     
     if "ours" in pipelines:
-        onnx_filename = args.model if args.model.endswith(".onnx") else f"{args.model}.onnx"
-        onnx_path = os.path.join(ONNX_MODEL_DIR, onnx_filename)
+        onnx_path = resolve_onnx_model_path(args.model)
         models['ours_onnx_path'] = onnx_path
         models['ours_ort'] = onnxruntime.InferenceSession(onnx_path, sess_options=ort_sess_options, providers=providers)
-        print(f"Loaded Ours ONNX: {onnx_filename}")
+        print(f"Loaded Ours ONNX: {os.path.basename(onnx_path)}")
         
     if "baseline1" in pipelines:
         from facenet_pytorch import MTCNN
@@ -550,7 +577,7 @@ def load_models(args):
 def main():
     parser = argparse.ArgumentParser(description="Benchmark pipeline stages for evaluation table.")
     parser.add_argument("--test-dir", default=None, help="Thư mục gốc chứa 3 folder con")
-    parser.add_argument("--model", default="hayao", help="Tên model ONNX")
+    parser.add_argument("--model", default="AnimeGANv3_Shinkai_37", help="Tên model ONNX")
     parser.add_argument("--device", choices=["cpu", "gpu"], default="gpu", help="Chạy trên CPU hay GPU (default: gpu)")
     parser.add_argument("--pipeline", choices=["ours", "baseline1", "baseline2", "all"], default="all", help="Pipeline cần chạy (default: all)")
     parser.add_argument("--runs", type=int, default=50, help="Số lần chạy (default: 50)")

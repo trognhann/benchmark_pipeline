@@ -36,7 +36,7 @@ Bạn có thể thêm/bớt ảnh vào các thư mục này. Script sẽ tự đ
 Chạy script với lệnh sau:
 ```bash
 # Chạy đánh giá cho toàn bộ các mô hình trên GPU
-python benchmark_pipeline.py --runs 50 --warmup 5 --device gpu --pipeline all
+python benchmark_pipeline.py --runs 5 --warmup 5 --device gpu --pipeline all
 ```
 
 Các tham số tùy chọn:
